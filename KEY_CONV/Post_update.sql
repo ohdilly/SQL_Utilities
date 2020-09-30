@@ -1,0 +1,6 @@
+SET DEFINE OFF;
+
+
+select count(1) from VALIDATA.IVD_TRANSACTION_RECORDS;
+--480
+/

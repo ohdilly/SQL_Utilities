@@ -1,0 +1,17 @@
+drop view IVDVC_CPGRP;
+drop view IVDVC_MISSING_PRODUCTS;
+drop view IVDVCG_CONTRACT;
+drop view IVDVCG_PLAN;
+drop view IVDVCG_PLAN_ID;
+drop view IVDVCG_PLAN_LOCATION;
+drop view IVDVCG_PLAN_TYPE;
+drop view IVDVCG_PRODUCT_ID;
+drop view IVDVCG_PRODUCT_SUMMARY;
+drop view IVDVCG_MAPPINGSET;
+drop view IVDVCG_SEVSET;
+drop view AZ_IVDV_CONT_BY_PROD;
+drop view AZ_IVDV_CONT_BY_PROD_PLAN;
+drop view V_CG_FINANCE_DETAIL;
+drop package body AZ_HISTORICAL_MIGRATION;
+drop package AZ_HISTORICAL_MIGRATION;
+drop procedure IVDP_CONTPROD_IDENT_CG_TEMP;

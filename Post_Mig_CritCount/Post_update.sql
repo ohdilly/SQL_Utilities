@@ -1,0 +1,5 @@
+SET DEFINE OFF;
+
+
+select count(1) from POST_MIG_CRITERION_COUNTS;
+--51

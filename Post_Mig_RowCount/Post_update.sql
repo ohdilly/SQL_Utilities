@@ -1,0 +1,5 @@
+SET DEFINE OFF;
+
+
+select count(1) from POST_EXP_FLEX_VD_MIG_ROW_COUNTS;
+--303
