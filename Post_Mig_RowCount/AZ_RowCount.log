@@ -1,0 +1,97 @@
+SQL> 
+SQL> select 'Started executing: ' ||to_char(systimestamp, 'MM/DD/YY HH24:MI:SSXFF AM TZR') from dual;
+
+'STARTEDEXECUTING:'||TO_CHAR(SYSTIMESTAMP,'MM/DD/YYHH24:MI:SSXFFAMTZR')           
+----------------------------------------------------------------------------------
+Started executing: 09/30/20 21:06:31.760419 PM +00:00
+
+SQL> 
+SQL> @Pre_update.sql
+SQL> SET DEFINE OFF;
+SQL> 
+SQL> 
+SQL> SELECT count(*) FROM dba_tables where table_name = 'POST_EXP_FLEX_VD_MIG_ROW_COUNTS';
+
+  COUNT(*)
+----------
+         1
+
+SQL> --0
+SQL> 
+SQL> @post_export_migration_count_VD_FLEX.sql
+SQL> --must run this first statement seperately
+SQL> 
+SQL> 
+SQL> -- Counts the rows in each table in schemas ('FLEX','VALIDATA','CARSNG') and stores them in a table
+SQL> DECLARE
+  2      lv_query_array          varchar_array;
+  3      lv_row_count_tab_name   VARCHAR2(64) := 'POST_EXP_FLEX_VD_MIG_ROW_COUNTS';
+  4  BEGIN
+  5      EXECUTE IMMEDIATE 'create or replace TYPE VARCHAR_ARRAY AS VARRAY(10000) OF VARCHAR2(1000)';
+  6      BEGIN
+  7          EXECUTE IMMEDIATE 'DROP table POST_EXP_FLEX_VD_MIG_ROW_COUNTS';
+  8      EXCEPTION
+  9          WHEN OTHERS THEN
+ 10              IF
+ 11                  sqlcode !=-942
+ 12              THEN
+ 13                  RAISE;
+ 14              END IF;
+ 15      END;
+ 16  
+ 17      EXECUTE IMMEDIATE 'CREATE TABLE POST_EXP_FLEX_VD_MIG_ROW_COUNTS (table_name varchar2(128), count number(20))';
+ 18      SELECT
+ 19          'INSERT INTO '
+ 20          || lv_row_count_tab_name
+ 21          || ' SELECT '''
+ 22          || table_name
+ 23          || ''', COUNT(*) FROM '
+ 24          || table_name rec
+ 25      BULK COLLECT INTO
+ 26          lv_query_array
+ 27      FROM
+ 28          all_tables
+ 29      WHERE
+ 30          owner IN (
+ 31              'FLEX',
+ 32              'VALIDATA',
+ 33              'CARSNG'
+ 34          );
+ 35  
+ 36      FOR lv_ctr IN 1..lv_query_array.count LOOP
+ 37          BEGIN
+ 38              EXECUTE IMMEDIATE lv_query_array(lv_ctr);
+ 39          EXCEPTION
+ 40              WHEN OTHERS THEN
+ 41                  continue;
+ 42          END;
+ 43      END LOOP;
+ 44   -- COMMIT;
+ 45  
+ 46  END;
+ 47  /
+
+PL/SQL procedure successfully completed.
+
+SQL> 
+SQL> @Post_update.sql
+SQL> SET DEFINE OFF;
+SQL> 
+SQL> 
+SQL> select count(1) from POST_EXP_FLEX_VD_MIG_ROW_COUNTS;
+
+  COUNT(1)
+----------
+       303
+
+SQL> --303
+SQL> 
+SQL> 
+SQL> select 'Finished executing: ' ||to_char(systimestamp, 'MM/DD/YY HH24:MI:SSXFF AM TZR') from dual;
+
+'FINISHEDEXECUTING:'||TO_CHAR(SYSTIMESTAMP,'MM/DD/YYHH24:MI:SSXFFAMTZR')           
+-----------------------------------------------------------------------------------
+Finished executing: 09/30/20 21:12:38.872270 PM +00:00
+
+SQL> 
+SQL> spool off

@@ -1,0 +1,629 @@
+SQL> 
+SQL> select 'Started executing: ' ||to_char(systimestamp, 'MM/DD/YY HH24:MI:SSXFF AM TZR') from dual;
+
+'STARTEDEXECUTING:'||TO_CHAR(SYSTIMESTAMP,'MM/DD/YYHH24:MI:SSXFFAMTZR')           
+----------------------------------------------------------------------------------
+Started executing: 09/30/20 21:05:14.236279 PM +00:00
+
+SQL> 
+SQL> @Pre_update.sql
+SQL> SET DEFINE OFF;
+SQL> 
+SQL> 
+SQL> SELECT count(*) FROM dba_tables where table_name = 'POST_MIG_CRITERION_COUNTS';
+
+  COUNT(*)
+----------
+         1
+
+SQL> --0
+SQL> 
+SQL> @criterion_count.sql
+SQL> Begin
+  2      BEGIN
+  3          EXECUTE IMMEDIATE 'DROP TABLE POST_MIG_CRITERION_COUNTS';
+  4      EXCEPTION
+  5          WHEN OTHERS THEN
+  6              IF
+  7                  sqlcode !=-942
+  8              THEN
+  9                  RAISE;
+ 10              END IF;
+ 11      END;
+ 12  
+ 13      EXECUTE IMMEDIATE 'CREATE TABLE POST_MIG_CRITERION_COUNTS
+ 14    (
+ 15      QUERY_ID   VARCHAR2(100) NOT NULL,
+ 16      QUERY_NAME VARCHAR2 (100),
+ 17      CRITERION  VARCHAR2 (100),
+ 18      CRITERION_TYPE VARCHAR2 (100),
+ 19      COUNT      NUMBER (20)
+ 20    )'
+ 21  ;
+ 22  
+ 23  -- 1. Transaction file list
+ 24      INSERT INTO post_mig_criterion_counts
+ 25          SELECT
+ 26              '1',
+ 27              'Transaction File Total Count by Status',
+ 28              CASE status
+ 29                      WHEN 5    THEN 'In Process'
+ 30                      WHEN 6    THEN 'Ready to Import'
+ 31                      WHEN 7    THEN 'Importing'
+ 32                      WHEN 8    THEN 'Validating'
+ 33                      WHEN 9    THEN 'Exporting'
+ 34                      WHEN 10   THEN 'Ready'
+ 35                      WHEN 11   THEN 'Deleted'
+ 36                      WHEN 12   THEN 'Error'
+ 37                      WHEN 13   THEN 'Deleting'
+ 38                      WHEN 14   THEN 'Changing'
+ 39                      WHEN 15   THEN 'Undoing'
+ 40                      WHEN 16   THEN 'Reexporting'
+ 41                      WHEN 17   THEN 'Reporting'
+ 42                  END,
+ 43              'Total_Count' AS total_count,
+ 44              SUM(1) AS count
+ 45          FROM
+ 46              ivd_transaction_file this_
+ 47          WHERE
+ 48              ( this_.file_data_type_cd IN (
+ 49                  'T'
+ 50              ) )
+ 51              AND   (
+ 52                  this_.file_id IS NULL
+ 53                  OR    ( EXISTS (
+ 54                      SELECT
+ 55                          1
+ 56                      FROM
+ 57                          ivd_transaction_file
+ 58                      WHERE
+ 59                          file_id = this_.file_id
+ 60                          AND   (
+ 61                              mds_num IS NULL
+ 62                              OR    mds_num = 1
+ 63                          )
+ 64                  ) )
+ 65              )
+ 66          GROUP BY
+ 67              status;
+ 68  
+ 69      INSERT INTO post_mig_criterion_counts
+ 70          SELECT
+ 71              '2',
+ 72              'Transaction File Total Items Imported by Status' AS query_name,
+ 73              CASE status
+ 74                      WHEN 5    THEN 'In Process'
+ 75                      WHEN 6    THEN 'Ready to Import'
+ 76                      WHEN 7    THEN 'Importing'
+ 77                      WHEN 8    THEN 'Validating'
+ 78                      WHEN 9    THEN 'Exporting'
+ 79                      WHEN 10   THEN 'Ready'
+ 80                      WHEN 11   THEN 'Deleted'
+ 81                      WHEN 12   THEN 'Error'
+ 82                      WHEN 13   THEN 'Deleting'
+ 83                      WHEN 14   THEN 'Changing'
+ 84                      WHEN 15   THEN 'Undoing'
+ 85                      WHEN 16   THEN 'Reexporting'
+ 86                      WHEN 17   THEN 'Reporting'
+ 87                  END,
+ 88              'Items_Imported' AS items_imported,
+ 89              SUM(items_imported)
+ 90          FROM
+ 91              ivd_transaction_file this_
+ 92          WHERE
+ 93              ( this_.file_data_type_cd IN (
+ 94                  'T'
+ 95              ) )
+ 96              AND   (
+ 97                  this_.file_id IS NULL
+ 98                  OR    ( EXISTS (
+ 99                      SELECT
+100                          1
+101                      FROM
+102                          ivd_transaction_file
+103                      WHERE
+104                          file_id = this_.file_id
+105                          AND   (
+106                              mds_num IS NULL
+107                              OR    mds_num = 1
+108                          )
+109                  ) )
+110              )
+111          GROUP BY
+112              status;
+113  
+114      INSERT INTO post_mig_criterion_counts
+115          SELECT
+116              '3',
+117              'Transaction File Total Items Included by Status' AS query_name,
+118              CASE status
+119                      WHEN 5    THEN 'In Process'
+120                      WHEN 6    THEN 'Ready to Import'
+121                      WHEN 7    THEN 'Importing'
+122                      WHEN 8    THEN 'Validating'
+123                      WHEN 9    THEN 'Exporting'
+124                      WHEN 10   THEN 'Ready'
+125                      WHEN 11   THEN 'Deleted'
+126                      WHEN 12   THEN 'Error'
+127                      WHEN 13   THEN 'Deleting'
+128                      WHEN 14   THEN 'Changing'
+129                      WHEN 15   THEN 'Undoing'
+130                      WHEN 16   THEN 'Reexporting'
+131                      WHEN 17   THEN 'Reporting'
+132                  END,
+133              'Items_Included' AS items_included,
+134              SUM(items_included)
+135          FROM
+136              ivd_transaction_file this_
+137          WHERE
+138              ( this_.file_data_type_cd IN (
+139                  'T'
+140              ) )
+141              AND   (
+142                  this_.file_id IS NULL
+143                  OR    ( EXISTS (
+144                      SELECT
+145                          1
+146                      FROM
+147                          ivd_transaction_file
+148                      WHERE
+149                          file_id = this_.file_id
+150                          AND   (
+151                              mds_num IS NULL
+152                              OR    mds_num = 1
+153                          )
+154                  ) )
+155              )
+156          GROUP BY
+157              status;
+158  
+159      INSERT INTO post_mig_criterion_counts
+160          SELECT
+161              '4',
+162              'Transaction File Total Items Excluded by Status' AS query_name,
+163              CASE status
+164                      WHEN 5    THEN 'In Process'
+165                      WHEN 6    THEN 'Ready to Import'
+166                      WHEN 7    THEN 'Importing'
+167                      WHEN 8    THEN 'Validating'
+168                      WHEN 9    THEN 'Exporting'
+169                      WHEN 10   THEN 'Ready'
+170                      WHEN 11   THEN 'Deleted'
+171                      WHEN 12   THEN 'Error'
+172                      WHEN 13   THEN 'Deleting'
+173                      WHEN 14   THEN 'Changing'
+174                      WHEN 15   THEN 'Undoing'
+175                      WHEN 16   THEN 'Reexporting'
+176                      WHEN 17   THEN 'Reporting'
+177                  END,
+178              'Items_Excluded' AS items_excluded,
+179              SUM(items_excluded)
+180          FROM
+181              ivd_transaction_file this_
+182          WHERE
+183              ( this_.file_data_type_cd IN (
+184                  'T'
+185              ) )
+186              AND   (
+187                  this_.file_id IS NULL
+188                  OR    ( EXISTS (
+189                      SELECT
+190                          1
+191                      FROM
+192                          ivd_transaction_file
+193                      WHERE
+194                          file_id = this_.file_id
+195                          AND   (
+196                              mds_num IS NULL
+197                              OR    mds_num = 1
+198                          )
+199                  ) )
+200              )
+201          GROUP BY
+202              status;
+203  
+204      INSERT INTO post_mig_criterion_counts
+205          SELECT
+206              '5',
+207              'Transaction File Total Items Summarized by Status' AS query_name,
+208              CASE status
+209                      WHEN 5    THEN 'In Process'
+210                      WHEN 6    THEN 'Ready to Import'
+211                      WHEN 7    THEN 'Importing'
+212                      WHEN 8    THEN 'Validating'
+213                      WHEN 9    THEN 'Exporting'
+214                      WHEN 10   THEN 'Ready'
+215                      WHEN 11   THEN 'Deleted'
+216                      WHEN 12   THEN 'Error'
+217                      WHEN 13   THEN 'Deleting'
+218                      WHEN 14   THEN 'Changing'
+219                      WHEN 15   THEN 'Undoing'
+220                      WHEN 16   THEN 'Reexporting'
+221                      WHEN 17   THEN 'Reporting'
+222                  END,
+223              'Items_Summarized' AS items_summarized,
+224              SUM(items_summarized)
+225          FROM
+226              ivd_transaction_file this_
+227          WHERE
+228              ( this_.file_data_type_cd IN (
+229                  'T'
+230              ) )
+231              AND   (
+232                  this_.file_id IS NULL
+233                  OR    ( EXISTS (
+234                      SELECT
+235                          1
+236                      FROM
+237                          ivd_transaction_file
+238                      WHERE
+239                          file_id = this_.file_id
+240                          AND   (
+241                              mds_num IS NULL
+242                              OR    mds_num = 1
+243                          )
+244                  ) )
+245              )
+246          GROUP BY
+247              status;
+248  
+249      INSERT INTO post_mig_criterion_counts
+250          SELECT
+251              '6',
+252              'Transaction File Total Amount Requested by Status' AS query_name,
+253              CASE status
+254                      WHEN 5    THEN 'In Process'
+255                      WHEN 6    THEN 'Ready to Import'
+256                      WHEN 7    THEN 'Importing'
+257                      WHEN 8    THEN 'Validating'
+258                      WHEN 9    THEN 'Exporting'
+259                      WHEN 10   THEN 'Ready'
+260                      WHEN 11   THEN 'Deleted'
+261                      WHEN 12   THEN 'Error'
+262                      WHEN 13   THEN 'Deleting'
+263                      WHEN 14   THEN 'Changing'
+264                      WHEN 15   THEN 'Undoing'
+265                      WHEN 16   THEN 'Reexporting'
+266                      WHEN 17   THEN 'Reporting'
+267                  END,
+268              'Total_Amount_Requested' AS total_amount_requested,
+269              SUM(total_amount_requested)
+270          FROM
+271              ivd_transaction_file this_
+272          WHERE
+273              ( this_.file_data_type_cd IN (
+274                  'T'
+275              ) )
+276              AND   (
+277                  this_.file_id IS NULL
+278                  OR    ( EXISTS (
+279                      SELECT
+280                          1
+281                      FROM
+282                          ivd_transaction_file
+283                      WHERE
+284                          file_id = this_.file_id
+285                          AND   (
+286                              mds_num IS NULL
+287                              OR    mds_num = 1
+288                          )
+289                  ) )
+290              )
+291          GROUP BY
+292              status;
+293  
+294      INSERT INTO post_mig_criterion_counts
+295          SELECT
+296              '7',
+297              'Transaction File Total Scripts by Status' AS query_name,
+298              CASE status
+299                      WHEN 5    THEN 'In Process'
+300                      WHEN 6    THEN 'Ready to Import'
+301                      WHEN 7    THEN 'Importing'
+302                      WHEN 8    THEN 'Validating'
+303                      WHEN 9    THEN 'Exporting'
+304                      WHEN 10   THEN 'Ready'
+305                      WHEN 11   THEN 'Deleted'
+306                      WHEN 12   THEN 'Error'
+307                      WHEN 13   THEN 'Deleting'
+308                      WHEN 14   THEN 'Changing'
+309                      WHEN 15   THEN 'Undoing'
+310                      WHEN 16   THEN 'Reexporting'
+311                      WHEN 17   THEN 'Reporting'
+312                  END,
+313              'Total_Scripts' AS total_scripts,
+314              SUM(total_scripts)
+315          FROM
+316              ivd_transaction_file this_
+317          WHERE
+318              ( this_.file_data_type_cd IN (
+319                  'T'
+320              ) )
+321              AND   (
+322                  this_.file_id IS NULL
+323                  OR    ( EXISTS (
+324                      SELECT
+325                          1
+326                      FROM
+327                          ivd_transaction_file
+328                      WHERE
+329                          file_id = this_.file_id
+330                          AND   (
+331                              mds_num IS NULL
+332                              OR    mds_num = 1
+333                          )
+334                  ) )
+335              )
+336          GROUP BY
+337              status;
+338  
+339      INSERT INTO post_mig_criterion_counts
+340          SELECT
+341              '8',
+342              'Transaction File Total Quantity by Status' AS query_name,
+343              CASE status
+344                      WHEN 5    THEN 'In Process'
+345                      WHEN 6    THEN 'Ready to Import'
+346                      WHEN 7    THEN 'Importing'
+347                      WHEN 8    THEN 'Validating'
+348                      WHEN 9    THEN 'Exporting'
+349                      WHEN 10   THEN 'Ready'
+350                      WHEN 11   THEN 'Deleted'
+351                      WHEN 12   THEN 'Error'
+352                      WHEN 13   THEN 'Deleting'
+353                      WHEN 14   THEN 'Changing'
+354                      WHEN 15   THEN 'Undoing'
+355                      WHEN 16   THEN 'Reexporting'
+356                      WHEN 17   THEN 'Reporting'
+357                  END,
+358              'Total_Quantity' AS total_quantity,
+359              SUM(total_quantity)
+360          FROM
+361              ivd_transaction_file this_
+362          WHERE
+363              ( this_.file_data_type_cd IN (
+364                  'T'
+365              ) )
+366              AND   (
+367                  this_.file_id IS NULL
+368                  OR    ( EXISTS (
+369                      SELECT
+370                          1
+371                      FROM
+372                          ivd_transaction_file
+373                      WHERE
+374                          file_id = this_.file_id
+375                          AND   (
+376                              mds_num IS NULL
+377                              OR    mds_num = 1
+378                          )
+379                  ) )
+380              )
+381          GROUP BY
+382              status;
+383  -- 2. Mapping sets (by type, import/export, status)
+384  
+385      INSERT INTO post_mig_criterion_counts
+386          SELECT
+387              '9',
+388              'Mapping Sets - CG Data Import Set by Status' AS query_name,
+389              status AS criterion,
+390              'Mapping_Sets' AS mapping_sets,
+391              COUNT(1) AS count
+392          FROM
+393              ivd_mappingset this_
+394          WHERE
+395              ( this_.type IS NOT NULL )
+396              AND   file_data_type_cd = 'D'
+397              AND   type = 'I'
+398          GROUP BY
+399              file_data_type_cd,
+400              type,
+401              status;
+402  
+403      INSERT INTO post_mig_criterion_counts
+404          SELECT
+405              '10',
+406              'Mapping Sets - CG Data Export Set by Status' AS query_name,
+407              status AS criterion,
+408              'Mapping_Sets' AS mapping_sets,
+409              COUNT(1) AS count
+410          FROM
+411              ivd_mappingset this_
+412          WHERE
+413              ( this_.type IS NOT NULL )
+414              AND   file_data_type_cd = 'D'
+415              AND   type = 'E'
+416          GROUP BY
+417              file_data_type_cd,
+418              type,
+419              status;
+420  
+421      INSERT INTO post_mig_criterion_counts
+422          SELECT
+423              '11',
+424              'Mapping Sets - CG Invoice Import Set by Status' AS query_name,
+425              status AS criterion,
+426              'Mapping_Sets' AS mapping_sets,
+427              COUNT(1) AS count
+428          FROM
+429              ivd_mappingset this_
+430          WHERE
+431              ( this_.type IS NOT NULL )
+432              AND   file_data_type_cd = 'I'
+433              AND   type = 'I'
+434          GROUP BY
+435              file_data_type_cd,
+436              type,
+437              status;
+438  
+439      INSERT INTO post_mig_criterion_counts
+440          SELECT
+441              '12',
+442              'Mapping Sets - CG Invoice Export Set by Status' AS query_name,
+443              status AS criterion,
+444              'Mapping_Sets' AS mapping_sets,
+445              COUNT(1) AS count
+446          FROM
+447              ivd_mappingset this_
+448          WHERE
+449              ( this_.type IS NOT NULL )
+450              AND   file_data_type_cd = 'I'
+451              AND   type = 'E'
+452          GROUP BY
+453              file_data_type_cd,
+454              type,
+455              status;
+456  
+457      INSERT INTO post_mig_criterion_counts
+458          SELECT
+459              '13',
+460              'Mapping Sets - Commercial/Medicaid Import Set by Status' AS query_name,
+461              status AS criterion,
+462              'Mapping_Sets' AS mapping_sets,
+463              COUNT(1) AS count
+464          FROM
+465              ivd_mappingset this_
+466          WHERE
+467              ( this_.type IS NOT NULL )
+468              AND   file_data_type_cd = 'T'
+469              AND   type = 'I'
+470          GROUP BY
+471              file_data_type_cd,
+472              type,
+473              status;
+474  
+475      INSERT INTO post_mig_criterion_counts
+476          SELECT
+477              '14',
+478              'Mapping Sets - Commercial/Medicaid Export Set by Status ' AS query_name,
+479              status AS criterion,
+480              'Mapping_Sets' AS mapping_sets,
+481              COUNT(1) AS count
+482          FROM
+483              ivd_mappingset this_
+484          WHERE
+485              ( this_.type IS NOT NULL )
+486              AND   file_data_type_cd = 'T'
+487              AND   type = 'E'
+488          GROUP BY
+489              file_data_type_cd,
+490              type,
+491              status;
+492  -- 3. Validation sets (by type)
+493  
+494      INSERT INTO post_mig_criterion_counts
+495          SELECT
+496              '15',
+497              'Validation Sets by File Data Type' AS query_name,
+498              CASE file_data_type_cd
+499                      WHEN 'T'   THEN 'Commercial/Medicaid'
+500                      WHEN 'D'   THEN 'CG Data'
+501                  END
+502              AS criterion,
+503              'Validation_Sets' AS validation_sets,
+504              COUNT(1) AS count
+505          FROM
+506              ivd_validation_set this_
+507          GROUP BY
+508              file_data_type_cd;
+509  
+510  -- 4. Severity sets (by status)
+511  
+512      INSERT INTO post_mig_criterion_counts
+513          SELECT
+514              '16',
+515              'Severity Sets by Status' AS query_name,
+516              status AS criterion,
+517              'Severity_Sets' AS severity_sets,
+518              COUNT(1) AS count
+519          FROM
+520              ivd_severity_set this_
+521          GROUP BY
+522              status;
+523  -- 5. Data Management- Aberrant Quantity List
+524  
+525      INSERT INTO post_mig_criterion_counts
+526          SELECT
+527              '17',
+528              'Aberrant Quantity by Status' AS query_name,
+529              CASE status
+530                      WHEN 1   THEN 'active'
+531                      WHEN 2   THEN 'in process'
+532                      WHEN 3   THEN 'expired'
+533                      WHEN 4   THEN 'duplicate record identified during activation'
+534                      WHEN 5   THEN 'data error identified during activation'
+535                      WHEN 6   THEN 'baseline calculation error'
+536                  END
+537              AS criterion,
+538              'Aberrant_Quantity' AS aberrant_quantity,
+539              COUNT(1) AS count
+540          FROM
+541              ivd_aberrant_quantity this_
+542          GROUP BY
+543              status;
+544  -- 6. Data Management- Pharmacy Master
+545  
+546      INSERT INTO post_mig_criterion_counts
+547          SELECT
+548              '18',
+549              'Pharmacy Master by Status' AS query_name,
+550              status AS criterion,
+551              'Pharmacy_Master' AS pharmacy_master,
+552              COUNT(1) AS count
+553          FROM
+554              ivd_pharmacy this_
+555          GROUP BY
+556              status;
+557  -- 7. Data Management- Segments
+558  
+559      INSERT INTO post_mig_criterion_counts
+560          SELECT
+561              '19',
+562              'Segments' AS query_name,
+563              'NA' AS criterion,
+564              'Management_Segments' AS management_segments,
+565              COUNT(1) AS count
+566          FROM
+567              ivd_market_segment this_;
+568  -- 8. Data Management- Segment Sets
+569  
+570      INSERT INTO post_mig_criterion_counts
+571          SELECT
+572              '20',
+573              'Segment Sets by Status' AS query_name,
+574              status AS criterion,
+575              'Management_Segments' AS management_segments,
+576              COUNT(1) AS count
+577          FROM
+578              ivd_market_set this_
+579          GROUP BY
+580              status;
+581  End;
+582  /
+
+PL/SQL procedure successfully completed.
+
+SQL> --    COMMIT;
+SQL> 
+SQL> @Post_update.sql
+SQL> SET DEFINE OFF;
+SQL> 
+SQL> 
+SQL> select count(1) from POST_MIG_CRITERION_COUNTS;
+
+  COUNT(1)
+----------
+        51
+
+SQL> --51
+SQL> 
+SQL> 
+SQL> select 'Finished executing: ' ||to_char(systimestamp, 'MM/DD/YY HH24:MI:SSXFF AM TZR') from dual;
+
+'FINISHEDEXECUTING:'||TO_CHAR(SYSTIMESTAMP,'MM/DD/YYHH24:MI:SSXFFAMTZR')           
+-----------------------------------------------------------------------------------
+Finished executing: 09/30/20 21:05:16.825755 PM +00:00
+
+SQL> 
+SQL> spool off
