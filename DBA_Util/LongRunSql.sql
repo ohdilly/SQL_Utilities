@@ -79,3 +79,6 @@ FROM
  where    start_time > '17-NOV-20'
  AND module like '%cob%'
  );
+
+--, it lists every SQL statement (in descending order by date) across the instance.
+DBMS_SQLTUNE.report_sql_monitor_list(type         => 'HTML', report_level => 'ALL') AS report FROM dual;
