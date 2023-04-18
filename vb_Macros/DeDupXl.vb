@@ -13,7 +13,7 @@ Sub RemoveDups()
 
         s = ""
         For i = 1 To c.Count
-            s = s & " " & c.Item(i)
+            s = s & " " & c.Item(i)  REM add deleimeter if needed
         Next i
         If Left(s, 1) = " " Then s = Mid(s, 2)
         r.Value = s
