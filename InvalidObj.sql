@@ -1,62 +1,150 @@
-SELECT owner, OBJECT_NAME, OBJECT_TYPE, STATUS, CREATED, TIMESTAMP 
-FROM dba_OBJECTS 
-WHERE STATUS <> 'VALID' AND OBJECT_TYPE NOT IN('SNAPSHOT') 
-ORDER BY owner, OBJECT_TYPE DESC;
+SELECT OWNER, OBJECT_NAME, OBJECT_TYPE, STATUS, CREATED, TIMESTAMP 
+FROM DBA_OBJECTS 
+WHERE STATUS <> 'VALID' AND OBJECT_TYPE NOT IN('MATERIALIZED VIEW') 
+AND OWNER IN('GP','CARS','FLEX', 'MDS','VALIDATA')
+ORDER BY OWNER, OBJECT_TYPE DESC;
 
- exec dbms_scheduler.run_job(job_name)
+select owner, name, type, text  from all_errors 
+WHERE OWNER IN('GP','CARS','FLEX', 'MDS','VALIDATA')
+and text not like  '%ignored'
+order by owner, type, name
+   ;
 
-select c.request_num, c.requesttyp_num, c.request_dt_create ,s.status_desc 
-from cars.request c, cars.status s 
-where c.status_num = s.status_num and c.status_num in (329,324,325,326);
+ EXEC DBMS_SCHEDULER.RUN_JOB(JOB_NAME)
 
-update cars.request set status_num = 327 where  status_num in (329,324,325,326);
+SELECT C.REQUEST_NUM, C.REQUESTTYP_NUM, C.REQUEST_DT_CREATE, to_char(c.request_dt_start, 'MM/DD/YY HH24:MI:SS') ,S.STATUS_DESC 
+FROM CARS.REQUEST C, CARS.STATUS S 
+WHERE C.STATUS_NUM = S.STATUS_NUM AND C.STATUS_NUM IN (329,324,325,326);
 
-select u.enabled, u.* from dba_scheduler_jobs u where owner in('GP','CARS','FLEX', 'MDS')order by u.owner, u.job_name;
+UPDATE CARS.REQUEST SET STATUS_NUM = 327 WHERE  STATUS_NUM IN (329,324,325,326);
 
 
-update tecmf_user set email=null where username <> 'Super';
+SELECT U.ENABLED, U.* FROM DBA_SCHEDULER_JOBS U WHERE OWNER IN('GP','CARS','FLEX', 'MDS','VALIDATA')ORDER BY U.OWNER, U.JOB_NAME;
 
-select count(*), owner, object_type from dba_objects 
-where owner in ('CARS','CARS_CONN','GP','FLEX','MDS','MDSYS') 
-group by owner, object_type order by owner,object_type;
+SELECT U.ENABLED, U.JOB_NAME , u.last_start_date, u.next_run_date, u.repeat_interval,  u.job_action
+FROM DBA_SCHEDULER_JOBS U 
+WHERE OWNER ='CARS'
+and job_name like 'REQUEST%'
+ORDER BY U.OWNER, U.JOB_NAME;
 
-select * from CARS.fsdcluster order by fsdcluster_num desc;
+select x.userid ,x.username, x.email  from flex.tecmf_user x where email is not null;
+update flex.tecmf_user set email = null where userid <> 1; 
 
-update CARS.fsdcluster 
-set dt_end = sysdate 
-where dt_end is null
-and nodetype is null;
+SELECT COUNT(*), OWNER, OBJECT_TYPE FROM DBA_OBJECTS 
+WHERE OWNER IN ('CARS','CARS_CONN','GP','FLEX','MDS','MDSYS') 
+GROUP BY OWNER, OBJECT_TYPE ORDER BY OWNER,OBJECT_TYPE;
 
-select * from apibunit where apihdr_num = 1352964 and apibunit_error_cd is not null;
-select * from apibuid where apihdr_num = 1352964 and apibuid_error_cd is not null; 
-select * from apimdsbunit where apihdr_num = 1352964 and apimdsbunit_error_cd is not null;
+SELECT * FROM CARS.FSDCLUSTER ORDER BY FSDCLUSTER_NUM DESC;
 
-select * from request where request_parms like '%1352964%' order by 1 desc;
+select* from validata.ivd_tr_dfd_cluster order by 1 desc;
 
-select * from procerrlog where request_num = 2845051 order by 1 desc;
+UPDATE CARS.FSDCLUSTER 
+SET DT_END = SYSDATE 
+WHERE DT_END IS NULL
+AND NODETYPE IS NULL;
 
-delete from apihdr where apihdr_num = 1352963;-- order by 1 desc;
+SELECT * FROM APIBUNIT WHERE APIHDR_NUM = 1352964 AND APIBUNIT_ERROR_CD IS NOT NULL;
+SELECT * FROM APIBUID WHERE APIHDR_NUM = 1352964 AND APIBUID_ERROR_CD IS NOT NULL; 
+SELECT * FROM APIMDSBUNIT WHERE APIHDR_NUM = 1352964 AND APIMDSBUNIT_ERROR_CD IS NOT NULL;
 
-select * from apihdr order by 1 desc;
+SELECT * FROM REQUEST WHERE REQUEST_PARMS LIKE '%1352964%' ORDER BY 1 DESC;
 
-select * from dba_scheduler_job_run_details where job_name like '%36850%' ;
+SELECT * FROM PROCERRLOG WHERE REQUEST_NUM = 2845051 ORDER BY 1 DESC;
 
-          SELECT j.adj_num,
-          j.adj_flg_reprc,
-          a.adjitm_num,	
-          submtyp_cd,
-          sum(a.adjitm_dispute_amt) disp_amnt,
-            NVL(SUM(a.adjitm_auth_units   ), 0) auth,
-                NVL(SUM(a.adjitm_pay_units    ), 0) pay,
-                NVL(SUM(a.adjitm_dispute_units), 0) disp,  -- MRB-3944
-                NVL(SUM(a.adjitm_resolve_units), 0) res,
-                NVL(SUM(a.adjitm_dismiss_units), 0) dmss
-           FROM adjitem a, adj j 
-           WHERE a.status_num <> 1700
-           and a.adj_num = j.adj_num
-           and a.adj_num in (7788587)
-           group by j.adj_num, a.adjitm_num,j.adj_flg_reprc,submtyp_cd
-           order by 1
+DELETE FROM APIHDR WHERE APIHDR_NUM = 1352963;-- ORDER BY 1 DESC;
+
+SELECT * FROM APIHDR ORDER BY 1 DESC;
+
+SELECT * FROM DBA_SCHEDULER_JOB_RUN_DETAILS WHERE JOB_NAME LIKE '%36850%' ;
+
+          SELECT J.ADJ_NUM,
+          J.ADJ_FLG_REPRC,
+          A.ADJITM_NUM,	
+          SUBMTYP_CD,
+          SUM(A.ADJITM_DISPUTE_AMT) DISP_AMNT,
+            NVL(SUM(A.ADJITM_AUTH_UNITS   ), 0) AUTH,
+                NVL(SUM(A.ADJITM_PAY_UNITS    ), 0) PAY,
+                NVL(SUM(A.ADJITM_DISPUTE_UNITS), 0) DISP,  -- MRB-3944
+                NVL(SUM(A.ADJITM_RESOLVE_UNITS), 0) RES,
+                NVL(SUM(A.ADJITM_DISMISS_UNITS), 0) DMSS
+           FROM ADJITEM A, ADJ J 
+           WHERE A.STATUS_NUM <> 1700
+           AND A.ADJ_NUM = J.ADJ_NUM
+           AND A.ADJ_NUM IN (7788587)
+           GROUP BY J.ADJ_NUM, A.ADJITM_NUM,J.ADJ_FLG_REPRC,SUBMTYP_CD
+           ORDER BY 1
 		   
-exec imany_schedule_controller_util('apibunit', 4, 0, 8, 1,(8,13,17));
-commit;
+---------DB Dependencies
+SELECT
+    o.owner,
+   o.object_name,
+    o.object_type,
+    (Select listagg(REFERENCED_NAME, ';') from dba_dependencies d where o.owner = d.owner and o.object_name = d.name) as Depends
+FROM
+    dba_objects o
+WHERE
+    owner IN ( 'GP', 'CARS', 'FLEX', 'REVITAS_MDS', 'VALIDATA','COGNOS_CM' )
+    AND object_name LIKE '%VERTEX%'
+union
+SELECT
+    o.owner,
+   o.object_name,
+    o.object_type,
+    (Select listagg(REFERENCED_NAME, ';') from dba_dependencies d where o.owner = d.owner and o.object_name = d.name) as Depends
+FROM
+    dba_objects o
+WHERE
+    owner IN ( 'GP', 'CARS', 'FLEX', 'REVITAS_MDS', 'VALIDATA','COGNOS_CM' )
+    AND object_name LIKE '%VRTX%'
+ORDER BY
+    owner,
+    object_type,
+    object_name
+;
+		   
+---- compression 
+SELECT owner, compression, COUNT(1) FROM all_tables WHERE tablespace_name IS NOT NULL GROUP BY owner,compression ORDER BY 1, 2;
+SELECT owner, compression, COUNT(1) FROM all_indexes WHERE tablespace_name IS NOT NULL GROUP BY owner,compression ORDER BY 1, 2;
+
+---Request timing ------
+SELECT
+    adjitem_row_count,
+    submitem_row_count,
+    elapsed_seconds,
+    round(adjitem_row_count / elapsed_seconds, 2)  authorize_rows_per_sec,
+    round(submitem_row_count / elapsed_seconds, 2) accept_rows_per_sec,
+    b.*
+FROM
+    (
+        SELECT
+            (
+                SELECT
+                    COUNT(1)
+                FROM
+                    adjitem b
+                WHERE
+                    b.subm_num = cars.imany_request_pkg.imany_get_req_parm_f(a.request_parms, 'key_num')
+            )   adjitem_row_count,
+            (
+                SELECT
+                    COUNT(1)
+                FROM
+                    submitem b
+                WHERE
+                    b.submdat_num = cars.imany_request_pkg.imany_get_req_parm_f(a.request_parms, 'key_num')
+            )   submitem_row_count,
+            CASE
+                WHEN ( ( request_dt_end - request_dt_start ) * 24 * 3600 ) = 0 THEN
+                    1
+                ELSE
+                    ( ( request_dt_end - request_dt_start ) * 24 * 3600 )
+            END elapsed_seconds,
+            a.*
+        FROM
+            request a
+        WHERE
+                to_char(a.request_dt_start, 'MM/DD/YYYY') = '02/14/2024'
+            AND a.request_msg = 'Submission Pre Price, Submission Authorize, Adjudication PriceAdj Priced'
+    ) b
+ORDER BY
+    2 DESC;
