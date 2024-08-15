@@ -12,6 +12,10 @@ order by owner, type, name
 
  EXEC DBMS_SCHEDULER.RUN_JOB(JOB_NAME)
 
+SELECT count(*)
+FROM CARS.REQUEST C
+WHERE  C.STATUS_NUM IN (329,324,325,326);
+
 SELECT C.REQUEST_NUM, C.REQUESTTYP_NUM, C.REQUEST_DT_CREATE, to_char(c.request_dt_start, 'MM/DD/YY HH24:MI:SS') ,S.STATUS_DESC 
 FROM CARS.REQUEST C, CARS.STATUS S 
 WHERE C.STATUS_NUM = S.STATUS_NUM AND C.STATUS_NUM IN (329,324,325,326);
@@ -84,27 +88,15 @@ FROM
     dba_objects o
 WHERE
     owner IN ( 'GP', 'CARS', 'FLEX', 'REVITAS_MDS', 'VALIDATA','COGNOS_CM' )
-    AND object_name LIKE '%VERTEX%'
-union
-SELECT
-    o.owner,
-   o.object_name,
-    o.object_type,
-    (Select listagg(REFERENCED_NAME, ';') from dba_dependencies d where o.owner = d.owner and o.object_name = d.name) as Depends
-FROM
-    dba_objects o
-WHERE
-    owner IN ( 'GP', 'CARS', 'FLEX', 'REVITAS_MDS', 'VALIDATA','COGNOS_CM' )
-    AND object_name LIKE '%VRTX%'
-ORDER BY
-    owner,
-    object_type,
-    object_name
-;
+    AND object_name LIKE '%VERTEX%';
 		   
 ---- compression 
 SELECT owner, compression, COUNT(1) FROM all_tables WHERE tablespace_name IS NOT NULL GROUP BY owner,compression ORDER BY 1, 2;
 SELECT owner, compression, COUNT(1) FROM all_indexes WHERE tablespace_name IS NOT NULL GROUP BY owner,compression ORDER BY 1, 2;
+
+-------------
+
+SELECT * FROM dba_source WHERE UPPER(text) LIKE '%<name>%'
 
 ---Request timing ------
 SELECT
@@ -148,3 +140,35 @@ FROM
     ) b
 ORDER BY
     2 DESC;
+-----	
+ select
+round (( ( nvl(request_dt_end, sysdate) - request_dt_start ) * 24 * 60 ) ,2) elapsed_minutes,
+            a.*
+        FROM
+            cars.request a
+        WHERE
+                to_char(a.request_dt_start, 'MM/DD/YYYY') = '05/30/2024'
+                and requesttyp_num = 20;
+
+1.	Check status for Validata:
+systemctl status jboss; systemctl status validatadiskfiled; systemctl status validatataskrunnerd; systemctl status carsdiskfiled; systemctl status cognos;
+
+2.	Stop services:
+sudo systemctl stop jboss
+sudo systemctl stop validatadiskfiled
+sudo systemctl stop validatataskrunnerd
+sudo systemctl stop carsdiskfiled
+
+3.	Start Services:
+sudo systemctl start jboss
+sudo systemctl start validatadiskfiled
+sudo systemctl start validatataskrunnerd
+sudo systemctl start carsdiskfiled
+
+4.	Check Status : systemctl status jboss; systemctl status validatadiskfiled; systemctl status validatataskrunnerd; systemctl status carsdiskfiled; systemctl status cognos;
+All services are in active (running) state.
+Restarting FSD has fixed the file import and export functionalities 
+
+
+sudo /etc/rc.d/init.d/jboss stop; sudo /etc/rc.d/init.d/validatadiskfiled stop; sudo /etc/rc.d/init.d/validatataskrunnerd stop; sudo /etc/rc.d/init.d/carsdiskfiled stop; sudo /etc/rc.d/init.d/cognos stop
+sudo /etc/rc.d/init.d/jboss start; sudo /etc/rc.d/init.d/validatadiskfiled start; sudo /etc/rc.d/init.d/validatataskrunnerd start; sudo /etc/rc.d/init.d/carsdiskfiled start; sudo /etc/rc.d/init.d/cognos start
