@@ -31,7 +31,7 @@ WHERE OWNER ='CARS'
 and job_name like 'REQUEST%'
 ORDER BY U.OWNER, U.JOB_NAME;
 
-select x.userid ,x.username, x.email  from flex.tecmf_user x where email is not null;
+
 update flex.tecmf_user set email = null where userid <> 1; 
 
 SELECT COUNT(*), OWNER, OBJECT_TYPE FROM DBA_OBJECTS 
@@ -149,6 +149,20 @@ round (( ( nvl(request_dt_end, sysdate) - request_dt_start ) * 24 * 60 ) ,2) ela
         WHERE
                 to_char(a.request_dt_start, 'MM/DD/YYYY') = '05/30/2024'
                 and requesttyp_num = 20;
+----------------------------
+--Foregn Key Ck
+SELECT a.table_name, a.column_name, a.constraint_name, c.owner, 
+       -- referenced pk
+       c.r_owner, c_pk.table_name r_table_name, c_pk.constraint_name r_pk
+  FROM all_cons_columns a
+  JOIN all_constraints c ON a.owner = c.owner
+                        AND a.constraint_name = c.constraint_name
+  JOIN all_constraints c_pk ON c.r_owner = c_pk.owner
+                           AND c.r_constraint_name = c_pk.constraint_name
+ WHERE c.constraint_type = 'R'
+   AND c_pk.table_name = 'IVD_PHARMACY_SERVICES'
+   ;
+   --a.table_name = 'IVD_PHARMACY_MEDICAID'
 
 1.	Check status for Validata:
 systemctl status jboss; systemctl status validatadiskfiled; systemctl status validatataskrunnerd; systemctl status carsdiskfiled; systemctl status cognos;
