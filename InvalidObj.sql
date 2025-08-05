@@ -22,6 +22,7 @@ WHERE C.STATUS_NUM = S.STATUS_NUM AND C.STATUS_NUM IN (329,324,325,326);
 
 UPDATE CARS.REQUEST SET STATUS_NUM = 327 WHERE  STATUS_NUM IN (329,324,325,326);
 
+dbms_scheduler.stop_job(job_name => 'name');
 
 SELECT U.ENABLED, U.* FROM DBA_SCHEDULER_JOBS U WHERE OWNER IN('GP','CARS','FLEX', 'MDS','VALIDATA')ORDER BY U.OWNER, U.JOB_NAME;
 
@@ -149,6 +150,26 @@ round (( ( nvl(request_dt_end, sysdate) - request_dt_start ) * 24 * 60 ) ,2) ela
         WHERE
                 to_char(a.request_dt_start, 'MM/DD/YYYY') = '05/30/2024'
                 and requesttyp_num = 20;
+				
+ select
+round (( ( nvl(end_date, sysdate) - start_date ) * 24 * 60 ) ,2) elapsed_minutes,
+            a.*
+        FROM
+            gp.gp_request a
+        WHERE
+                to_char(a.start_date, 'MM/DD/YYYY') > '04/30/2025'
+                and req_type_id = 8;
+				
+ select
+round (( ( nvl(end_time, sysdate) - start_time ) * 24 * 60 ) ,2) elapsed_minutes,
+            a.*
+        FROM
+            gp.gp_calculation_run a
+        WHERE
+                to_char(a.start_time, 'MM/DD/YYYY') > '04/30/2025'
+                and CALCULATION_ID = 102
+                --and a.CALCULATION_RUN_ID = 122
+                ;
 ----------------------------
 --Foregn Key Ck
 SELECT a.table_name, a.column_name, a.constraint_name, c.owner, 
@@ -163,6 +184,16 @@ SELECT a.table_name, a.column_name, a.constraint_name, c.owner,
    AND c_pk.table_name = 'IVD_PHARMACY_SERVICES'
    ;
    --a.table_name = 'IVD_PHARMACY_MEDICAID'
+   
+SELECT 'MDS', a.system_variable_value FROM mds.system_variables_tb a WHERE a.system_variable_name = 'JOB_CLASS_NAME'
+UNION ALL
+SELECT 'VALIDATA', a.value FROM validata.ivd_runtime_parameter a WHERE a.key = 'application.job_class'
+UNION ALL
+SELECT 'CARS', a.sysconfig_key_value FROM cars.sysconfig a WHERE a.sysconfig_key_name = 'JOB_CLASS_NAME'
+UNION ALL
+SELECT 'GP', a.value FROM gp.gp_system_settings a WHERE upper(name) = 'JOB_CLASS'
+ORDER BY
+   1
 
 1.	Check status for Validata:
 systemctl status jboss; systemctl status validatadiskfiled; systemctl status validatataskrunnerd; systemctl status carsdiskfiled; systemctl status cognos;
@@ -186,3 +217,6 @@ Restarting FSD has fixed the file import and export functionalities
 
 sudo /etc/rc.d/init.d/jboss stop; sudo /etc/rc.d/init.d/validatadiskfiled stop; sudo /etc/rc.d/init.d/validatataskrunnerd stop; sudo /etc/rc.d/init.d/carsdiskfiled stop; sudo /etc/rc.d/init.d/cognos stop
 sudo /etc/rc.d/init.d/jboss start; sudo /etc/rc.d/init.d/validatadiskfiled start; sudo /etc/rc.d/init.d/validatataskrunnerd start; sudo /etc/rc.d/init.d/carsdiskfiled start; sudo /etc/rc.d/init.d/cognos start
+
+---count files in a dir newer tha 7 days
+find $FILE_PATH -type f -mtime -7 | wc -l
